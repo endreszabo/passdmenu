@@ -123,7 +123,7 @@ def get_user_second_line(pass_output):
 def get_user_by_pattern(pass_output, user_pattern):
     for line in pass_output[1:]:
         match = re.match(user_pattern, line)
-        if match and  len(match.groups()) == 1:
+        if match and len(match.groups()) == 1:
             return match.group(1)
 
     return None
@@ -194,6 +194,9 @@ def main():
                               'Cannot find a default path to dmenu, '
                               'you must provide this option.'
                               if DMENU is None else 'Defaults to ' + DMENU))
+    parser.add_argument('-p', '--prompt', dest="prompt", default=None,
+                        help='The prompt to be displayed to the left of the '
+                        'dmenu input field.')
     parser.add_argument('-x', '--xsel', dest="xsel", default=XSEL_PRIMARY,
                         help=('The X selections into which to copy the '
                               'username/password. Possible values are comma-'
@@ -242,28 +245,34 @@ def main():
         error = True
 
     prompt = ""
+    if args.prompt:
+        prompt = args.prompt
+
     if args.autotype:
         if XDOTOOL is None:
             print("You need to install xdotool.", file=sys.stderr)
             error = True
-        if args.press_return:
-            prompt = "enter"
-        else:
-            prompt = "type"
+        if args.prompt is None:
+            if args.press_return:
+                prompt = "enter"
+            else:
+                prompt = "type"
 
     if args.copy:
         if XCLIP is None:
             print("You need to install xclip.", file=sys.stderr)
             error = True
-        prompt += ("," if prompt != "" else "") + "copy"
+        if args.prompt is None:
+            prompt += ("," if prompt != "" else "") + "copy"
 
     if args.execute:
         if shutil.which(args.execute) is None:
             print("The command to execute is not executable or does not exist.")
             error = True
         else:
-            prompt += (("," if prompt != "" else "") +
-                       os.path.basename(args.execute))
+            if args.prompt is None:
+                prompt += (("," if prompt != "" else "") +
+                           os.path.basename(args.execute))
 
     # make sure the password store exists
     if not os.path.isdir(args.store):
